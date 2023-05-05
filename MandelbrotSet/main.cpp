@@ -13,6 +13,10 @@ int screen_height{1080};
 int num_frames{0};
 float last_time{0.0f};
 
+float zoom = 2.0f;
+float center_x = 0.75f;
+float center_y = 0.5f;
+
 float vertices[] = {
     -1.0f, -1.0f, -0.0f, // 1
     1.0f,  1.0f,  -0.0f, // 2
@@ -39,14 +43,48 @@ void countFPS() {
   }
 }
 
+void scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {
+  if (yoffset == -1) {
+    zoom *= 1.2f;
+  }
+  if (yoffset == 1) {
+    zoom /= 1.2f;
+  }
+}
+
+void keyboardCallback(GLFWwindow *window, int key, int scancode, int action,
+                      int mods) {
+  if (key == GLFW_KEY_R && action == GLFW_RELEASE) {
+    center_x = 0.75f;
+    center_y = 0.5f;
+    zoom = 2.0f;
+  }
+  if (key == GLFW_KEY_UP && action == GLFW_RELEASE) {
+    center_y -= 0.1f;
+  }
+  if (key == GLFW_KEY_DOWN && action == GLFW_RELEASE) {
+    center_y += 0.1f;
+  }
+  if (key == GLFW_KEY_LEFT && action == GLFW_RELEASE) {
+    center_x += 0.1f;
+  }
+  if (key == GLFW_KEY_RIGHT && action == GLFW_RELEASE) {
+    center_x -= 0.1f;
+  }
+}
+
 int main() {
+  std::cout << "Use Arrow keys to control the XY position of the Plot"
+            << std::endl;
+  std::cout << "Use Mouse Scroll Wheel to Zoom In and Out" << std::endl;
+
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  GLFWwindow *window =
-      glfwCreateWindow(screen_width, screen_height, "Mandelbrot", NULL, NULL);
+  GLFWwindow *window = glfwCreateWindow(screen_width, screen_height,
+                                        "Mandelbrot Set", NULL, NULL);
 
   if (window == nullptr) {
     std::cout << "Failed to create GLFW window!\n";
@@ -80,8 +118,7 @@ int main() {
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
   glEnableVertexAttribArray(0);
 
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindVertexArray(0);
+  glBindVertexArray(VAO);
 
   Shader our_shader("/home/ssg1002/dev/fractals/MandelbrotSet/shader.vert",
                     "/home/ssg1002/dev/fractals/MandelbrotSet/shader.frag");
@@ -89,6 +126,12 @@ int main() {
   last_time = glfwGetTime();
 
   glEnable(GL_DEPTH_TEST);
+  our_shader.use_shader();
+  GLint fractalCenter = glGetUniformLocation(our_shader.program_ID, "center");
+  GLint fractalZoom = glGetUniformLocation(our_shader.program_ID, "zoom");
+
+  glfwSetKeyCallback(window, keyboardCallback);
+  glfwSetScrollCallback(window, scrollCallback);
 
   while (!glfwWindowShouldClose(window)) {
     glClearColor(0.2f, 0.0f, 0.2f, 1.0f);
@@ -96,8 +139,8 @@ int main() {
 
     countFPS();
 
-    our_shader.use_shader();
-    glBindVertexArray(VAO);
+    glUniform2f(fractalCenter, center_x, center_y);
+    glUniform1f(fractalZoom, zoom);
 
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
