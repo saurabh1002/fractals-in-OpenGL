@@ -1,23 +1,22 @@
 #include "shader.h"
+
+#include <filesystem>
 #include <iostream>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
 int screen_width{1080};
 int screen_height{1080};
 
-int num_frames{0};
-float last_time{0.0f};
+int symmetry{2};
+float default_zoom{2.0f};
+float default_center_x{0.5f};
+float default_center_y{0.5f};
 
-float zoom = 2.0f;
-float center_x = 0.5f;
-float center_y = 0.5f;
-float constant_x = -0.162f;
-float constant_y = 1.04f;
+float complex_constant_x{0.15f};
+float complex_constant_y{-0.06f};
 
 float vertices[] = {
     -1.0f, -1.0f, -0.0f, // 1
@@ -35,76 +34,82 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
   glViewport(0, 0, width, height);
 }
 
-void countFPS() {
-  double current_time = glfwGetTime();
-  num_frames++;
-  if (current_time - last_time >= 1.0) {
-    std::cout << 1000.0 / num_frames << "ms / frame\n";
-    num_frames = 0;
-    last_time += 1.0;
-  }
-}
-
 void mousebuttonCallback(GLFWwindow *window, int button, int action, int mods) {
   if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
-    constant_x = ((xpos / screen_width) - 0.5) * 3;
-    constant_y = ((ypos / screen_height) - 0.5) * 3;
-    std::cout << "Julia Set Iterations constant value set to (" << constant_x
-              << ") + (" << constant_y << "i)\n";
+    complex_constant_x = ((xpos / screen_width) - 0.5) * 3.0;
+    complex_constant_y = ((ypos / screen_height) - 0.5) * 3.0;
+    std::cout << "Julia Set Complex Constant set to (" << complex_constant_x
+              << ") + (" << complex_constant_y << "i)\n";
   }
 }
 
 void scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {
   if (yoffset == -1) {
-    zoom *= 1.2f;
+    default_zoom *= 1.1f;
   }
   if (yoffset == 1) {
-    zoom /= 1.2f;
+    default_zoom /= 1.1f;
   }
 }
 
 void keyboardCallback(GLFWwindow *window, int key, int scancode, int action,
                       int mods) {
-  if (key == GLFW_KEY_R && action == GLFW_RELEASE) {
-    center_x = 0.75f;
-    center_y = 0.5f;
-    zoom = 2.0f;
-  }
-  if (key == GLFW_KEY_UP && action == GLFW_RELEASE) {
-    center_y -= 0.1f;
-  }
-  if (key == GLFW_KEY_DOWN && action == GLFW_RELEASE) {
-    center_y += 0.1f;
-  }
-  if (key == GLFW_KEY_LEFT && action == GLFW_RELEASE) {
-    center_x += 0.1f;
-  }
-  if (key == GLFW_KEY_RIGHT && action == GLFW_RELEASE) {
-    center_x -= 0.1f;
+  if (action == GLFW_RELEASE) {
+    switch (key) {
+    case GLFW_KEY_2:
+      symmetry = 2;
+      return;
+
+    case GLFW_KEY_3:
+      symmetry = 3;
+      return;
+
+    case GLFW_KEY_R:
+      default_center_x = 0.5f;
+      default_center_y = 0.5f;
+      default_zoom = 2.0f;
+      return;
+
+    case GLFW_KEY_UP:
+      default_center_y -= 0.05f;
+      return;
+
+    case GLFW_KEY_DOWN:
+      default_center_y += 0.05f;
+      return;
+
+    case GLFW_KEY_LEFT:
+      default_center_x += 0.05f;
+      return;
+
+    case GLFW_KEY_RIGHT:
+      default_center_x -= 0.05f;
+      return;
+    }
   }
 }
 
 int main() {
-  std::cout << "Use Arrow keys to control the XY position of the Plot"
-            << std::endl;
-  std::cout << "Use Mouse Scroll Wheel to Zoom In and Out" << std::endl;
-  std::cout << "Left Click on the screen to select a scaled coordinate [-1.5, "
-               "1.5] to be "
-               "used as constant value for Julia Set Iterations"
-            << std::endl;
+  std::cout << "Controls:\n";
+  std::cout << "\t[Arrow Keys]\t:\tX, Y position of the plot\n";
+  std::cout << "\t[Mouse Scroll]\t:\tZoom in/Zoom out\n";
+  std::cout << "\t[Left Click]\t:\tSelect a scaled coordinate in [-1.5, 1.5] "
+               "for the complex constant of the Julia Set\n";
+  std::cout << "\t[2]\t\t:\tTwo-way symmetric fractal\n";
+  std::cout << "\t[3]\t\t:\tThree-way symmetric fractal\n";
 
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  GLFWwindow *window =
-      glfwCreateWindow(screen_width, screen_height, "Julia Set", NULL, NULL);
+  GLFWwindow *window = glfwCreateWindow(screen_width, screen_height,
+                                        "Julia Set - Playground", NULL, NULL);
 
   if (window == nullptr) {
-    std::cout << "Failed to create GLFW window!\n";
+    std::cout << "Failed to Create GLFW Window!\n";
     glfwTerminate();
     return -1;
   }
@@ -112,7 +117,7 @@ int main() {
   glfwMakeContextCurrent(window);
 
   if (glewInit()) {
-    std::cout << "Failed initializing GLEW\n";
+    std::cout << "Failed Initializing GLEW\n";
   }
 
   glViewport(0, 0, screen_width, screen_height);
@@ -137,31 +142,38 @@ int main() {
 
   glBindVertexArray(VAO);
 
-  Shader our_shader("/home/ssg1002/dev/fractals/JuliaSet/shader.vert",
-                    "/home/ssg1002/dev/fractals/JuliaSet/shader.frag");
-
-  last_time = glfwGetTime();
+  Shader our_shader(
+      std::filesystem::current_path().parent_path() / "shader.vert",
+      std::filesystem::current_path().parent_path() / "shader.frag");
 
   glEnable(GL_DEPTH_TEST);
   our_shader.use_shader();
+
+  GLint screenDimensions =
+      glGetUniformLocation(our_shader.program_ID, "screen_dimension");
   GLint fractalCenter = glGetUniformLocation(our_shader.program_ID, "center");
   GLint fractalZoom = glGetUniformLocation(our_shader.program_ID, "zoom");
+
   GLint fractalConstant =
-      glGetUniformLocation(our_shader.program_ID, "constant");
+      glGetUniformLocation(our_shader.program_ID, "complex_constant");
+  GLint fractalSymmetry =
+      glGetUniformLocation(our_shader.program_ID, "symmetry");
 
   glfwSetKeyCallback(window, keyboardCallback);
   glfwSetScrollCallback(window, scrollCallback);
   glfwSetMouseButtonCallback(window, mousebuttonCallback);
 
   while (!glfwWindowShouldClose(window)) {
+
     glClearColor(0.2f, 0.0f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    countFPS();
+    glUniform2f(screenDimensions, screen_width, screen_height);
+    glUniform2f(fractalCenter, default_center_x, default_center_y);
+    glUniform1f(fractalZoom, default_zoom);
 
-    glUniform2f(fractalConstant, constant_x, constant_y);
-    glUniform2f(fractalCenter, center_x, center_y);
-    glUniform1f(fractalZoom, zoom);
+    glUniform2f(fractalConstant, complex_constant_x, complex_constant_y);
+    glUniform1i(fractalSymmetry, symmetry);
 
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
@@ -172,7 +184,7 @@ int main() {
   glDeleteVertexArrays(1, &VAO);
   glDeleteBuffers(1, &VBO);
   glDeleteBuffers(1, &EBO);
-
   glfwTerminate();
+
   return 0;
 }

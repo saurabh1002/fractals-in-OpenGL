@@ -20,8 +20,13 @@ int get_iterations()
     while(iterations < MAX_ITERATIONS)
     {
         float temp_real = real;
+        // z^2 + c
         real = (real * real - imag * imag) + const_real;
         imag = (2.0 * temp_real * imag) + const_imag;
+
+        // z^3 + c
+        // real = real * (real * real - imag * imag) - (2.0 * real * imag * imag) + const_real;
+        // imag = imag * (temp_real * temp_real - imag * imag) + (2.0 * temp_real * temp_real * imag) + const_imag;
 
         float dist = real * real + imag * imag;
         if (dist >= 2.0)

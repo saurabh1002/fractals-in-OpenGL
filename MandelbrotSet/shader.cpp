@@ -1,9 +1,14 @@
+#include <cstring>
+#include <fstream>
 #include <iostream>
 #include <string>
 
+#include <GL/glew.h>
+#include <glm/glm.hpp>
+
 #include "shader.h"
 
-std::string Shader::read_shader_file(const char *file_path) {
+std::string Shader::read_shader_file(const std::string &file_path) {
   std::string code;
   std::ifstream shader_file(file_path, std::ios::in);
 
@@ -21,7 +26,7 @@ std::string Shader::read_shader_file(const char *file_path) {
   return code;
 }
 
-void Shader::add_shader(unsigned int program, const char *shader_path,
+void Shader::add_shader(unsigned int program, const std::string &shader_path,
                         GLenum shader_type) {
   std::string shader_string = read_shader_file(shader_path);
 
@@ -49,7 +54,8 @@ void Shader::add_shader(unsigned int program, const char *shader_path,
   glAttachShader(program, shader);
 }
 
-Shader::Shader(const char *vertex_shader_path, const char *frag_shader_path) {
+Shader::Shader(const std::string &vertex_shader_path,
+               const std::string &frag_shader_path) {
   program_ID = glCreateProgram();
 
   add_shader(program_ID, vertex_shader_path, GL_VERTEX_SHADER);
@@ -73,13 +79,13 @@ Shader::~Shader() {
   }
 }
 
-void Shader::use_shader() { glUseProgram(program_ID); }
+void Shader::use_shader() const { glUseProgram(program_ID); }
 
-void Shader::set_float(const std::string &name, float value) const {
+void Shader::set_float(const std::string &name, const float value) const {
   glUniform1f(glGetUniformLocation(program_ID, name.c_str()), value);
 }
 
-void Shader::set_vec4(const std::string &name, glm::vec4 vec) const {
+void Shader::set_vec4(const std::string &name, const glm::vec4 vec) const {
   glUniform4f(glGetUniformLocation(program_ID, name.c_str()), vec.x, vec.y,
               vec.z, vec.w);
 }

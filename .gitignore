@@ -1,4 +1,5 @@
 /build
+/tutorials
 
-/.cache
-/.vscode
+.cache/
+.vscode/
