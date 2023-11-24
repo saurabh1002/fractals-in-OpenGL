@@ -143,8 +143,8 @@ int main() {
   glBindVertexArray(VAO);
 
   Shader our_shader(
-      std::filesystem::current_path().parent_path() / "shader.vert",
-      std::filesystem::current_path().parent_path() / "shader.frag");
+      std::filesystem::current_path() / "shader.vert",
+      std::filesystem::current_path() / "shader.frag");
 
   glEnable(GL_DEPTH_TEST);
   our_shader.use_shader();

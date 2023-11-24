@@ -1,5 +1,6 @@
 #include "shader.h"
 #include <iostream>
+#include <filesystem>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -120,8 +121,9 @@ int main() {
 
   glBindVertexArray(VAO);
 
-  Shader our_shader("/home/ssg1002/dev/fractals/MandelbrotSet/shader.vert",
-                    "/home/ssg1002/dev/fractals/MandelbrotSet/shader.frag");
+  Shader our_shader(
+      std::filesystem::current_path() / "shader.vert",
+      std::filesystem::current_path() / "shader.frag");
 
   last_time = glfwGetTime();
 
